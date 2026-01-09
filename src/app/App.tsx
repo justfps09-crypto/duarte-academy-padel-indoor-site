@@ -4,6 +4,7 @@ import { Concept } from './components/Concept';
 import { Technology } from './components/Technology';
 import { Courts } from './components/Courts';
 import { Bookings } from './components/Bookings';
+import { BookingForm } from './components/BookingForm';
 import { Plans } from './components/Plans';
 import { Coaches } from './components/Coaches';
 import { Gallery } from './components/Gallery';
@@ -19,6 +20,7 @@ export default function App() {
       <Technology />
       <Courts />
       <Bookings />
+      <BookingForm />
       <Plans />
       <Coaches />
       <Gallery />
