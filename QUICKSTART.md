@@ -4,139 +4,76 @@ Guia rápido para começar em 5 minutos.
 
 ## Passo 1: Instalar Dependências
 
-### Frontend
 ```bash
 npm install
-```
-
-### Backend
-```bash
-cd server
-npm install
-cd ..
 ```
 
 ## Passo 2: Configurar Supabase
 
-1. Cria conta em [supabase.com](https://supabase.com)
-2. Cria novo projeto
-3. Vai a Settings → API
-4. Copia:
-   - Project URL
-   - anon public key
-
-## Passo 3: Configurar Variáveis de Ambiente
-
-### Frontend (.env)
+Já vem configurado! O ficheiro `.env` tem:
 ```env
-VITE_API_URL=http://localhost:3001/api
+VITE_SUPABASE_URL=https://iprfxatdhusfccztxkud.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-### Backend (server/.env)
-```env
-PORT=3001
-SUPABASE_URL=https://seu-projeto.supabase.co
-SUPABASE_ANON_KEY=sua_chave_anon_aqui
-NODE_ENV=development
-```
+A base de dados já tem:
+- Tabela `reservas` com RLS
+- Tabela `contactos` com RLS
+- Todas as políticas configuradas
 
-## Passo 4: Criar Base de Dados
+## Passo 3: Iniciar Frontend
 
-A base de dados já está configurada no Supabase com:
-- Tabela `reservas`
-- Tabela `contactos`
-- RLS ativado
-- Políticas configuradas
-
-## Passo 5: Iniciar Servidores
-
-### Terminal 1 - Backend
-```bash
-cd server
-npm run dev
-```
-
-### Terminal 2 - Frontend
 ```bash
 npm run dev
 ```
 
-## Passo 6: Testar
+Frontend vai estar em: `http://localhost:5173`
+
+## Passo 4: Testar
 
 1. Acede a `http://localhost:5173`
-2. Navega até "Reservas"
+2. Navega até "Reservar"
 3. Preenche o formulário
 4. Clica em "Confirmar Reserva"
 5. Verifica mensagem de sucesso
+6. Dados ficam em Supabase automaticamente
 
 ## Estrutura de URLs
 
-- **Frontend**: http://localhost:5173
-- **Backend**: http://localhost:3001
-- **API Health**: http://localhost:3001/api/health
-- **Supabase**: https://app.supabase.com
+- **Frontend Local**: http://localhost:5173
+- **Supabase Dashboard**: https://app.supabase.com
+- **Frontend Netlify**: https://duarte-gym-123.netlify.app (após deploy)
 
 ## Problemas Comuns
 
 ### "Cannot find module"
 ```bash
 npm install
-cd server && npm install
 ```
 
-### "Configuração do Supabase em falta"
-- Verifica ficheiro `server/.env`
-- Confirma que as variáveis estão corretas
+### "Supabase configuration missing"
+Já vem configurado no `.env`. Não precisa de fazer nada.
 
-### "Network Error"
-- Verifica se backend está a correr
-- Confirma URL da API no `.env`
+### Página em branco
+1. Abre DevTools (F12)
+2. Clica em Console
+3. Verifica se há erros
+4. Recarrega a página (Ctrl+Shift+R)
 
-### Port já em uso
-```bash
-# Mata processo na porta 3001
-lsof -ti:3001 | xargs kill -9
+### Formulários não funcionam
+1. Abre DevTools → Console
+2. Verifica erros
+3. Confirma que `.env` tem as variáveis
 
-# Ou muda a porta no server/.env
-PORT=3002
-```
+## Para Produção (Netlify)
 
-## Endpoints Principais
+Lê o ficheiro `NETLIFY_SETUP.md` para um guia completo.
 
-### Testar Backend
-```bash
-curl http://localhost:3001/api/health
-```
-
-### Criar Reserva
-```bash
-curl -X POST http://localhost:3001/api/reservas \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nome": "João Silva",
-    "email": "joao@example.com",
-    "data": "2026-01-15",
-    "horario": "14:00"
-  }'
-```
-
-### Enviar Contacto
-```bash
-curl -X POST http://localhost:3001/api/contactos \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nome": "Maria Santos",
-    "email": "maria@example.com",
-    "mensagem": "Gostaria de mais informações"
-  }'
-```
-
-## Próximos Passos
-
-1. Personaliza o design em `src/app/components/`
-2. Adiciona mais validações em `server/middleware/validation.js`
-3. Configura email notifications
-4. Deploy (ver `DEPLOY.md`)
+Resumo rápido:
+1. Push código para GitHub
+2. Conecta GitHub no Netlify
+3. Configura variáveis de ambiente
+4. Deploy automático!
 
 ## Comandos Úteis
 
@@ -144,11 +81,8 @@ curl -X POST http://localhost:3001/api/contactos \
 # Build frontend para produção
 npm run build
 
-# Ver estrutura do projeto
-tree -I 'node_modules|dist'
-
-# Logs do backend
-cd server && npm run dev
+# Ver estilos CSS
+ls -la src/styles/
 
 # Limpar cache
 rm -rf node_modules dist
@@ -159,9 +93,10 @@ npm run build
 ## Suporte
 
 - README principal: `README.md`
-- Guia de deploy: `DEPLOY.md`
-- Backend docs: `server/README.md`
+- Guia Netlify: `NETLIFY_SETUP.md`
+- Todos os comandos: `COMMANDS.md`
+- Resumo do projeto: `PROJECT_SUMMARY.md`
 
 ---
 
-**Pronto!** Agora tens uma aplicação completa a funcionar localmente! 🚀
+**Pronto!** Agora tens a aplicação a funcionar! Próximo passo: Netlify! 🚀

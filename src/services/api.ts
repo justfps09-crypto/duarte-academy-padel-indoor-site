@@ -1,4 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Supabase configuration missing');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface ApiResponse<T> {
   sucesso: boolean;
@@ -32,37 +41,40 @@ interface HorariosDisponiveis {
 }
 
 class ApiService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.erro || 'Erro na requisição');
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Erro na API:', error);
-      throw error;
-    }
-  }
-
   async criarReserva(dados: ReservaData): Promise<ApiResponse<any>> {
-    return this.request('/reservas', {
-      method: 'POST',
-      body: JSON.stringify(dados),
-    });
+    try {
+      const { data, error } = await supabase
+        .from('reservas')
+        .insert([
+          {
+            nome: dados.nome,
+            email: dados.email,
+            telefone: dados.telefone || null,
+            campo: dados.campo || 'campo1',
+            data: dados.data,
+            horario: dados.horario,
+            plano: dados.plano || null,
+            mensagem: dados.mensagem || null,
+            status: 'pendente'
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        sucesso: true,
+        mensagem: 'Reserva criada com sucesso! Entraremos em contacto brevemente.',
+        dados: data
+      };
+    } catch (error: any) {
+      console.error('Erro ao criar reserva:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro ao criar reserva. Por favor, tente novamente.'
+      };
+    }
   }
 
   async obterReservas(filtros?: {
@@ -70,38 +82,116 @@ class ApiService {
     status?: string;
     email?: string;
   }): Promise<ApiResponse<any[]>> {
-    const params = new URLSearchParams();
+    try {
+      let query = supabase
+        .from('reservas')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (filtros?.data) params.append('data', filtros.data);
-    if (filtros?.status) params.append('status', filtros.status);
-    if (filtros?.email) params.append('email', filtros.email);
+      if (filtros?.data) {
+        query = query.eq('data', filtros.data);
+      }
 
-    const queryString = params.toString();
-    const endpoint = queryString ? `/reservas?${queryString}` : '/reservas';
+      if (filtros?.status) {
+        query = query.eq('status', filtros.status);
+      }
 
-    return this.request(endpoint);
+      if (filtros?.email) {
+        query = query.eq('email', filtros.email);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return {
+        sucesso: true,
+        dados: data || [],
+      };
+    } catch (error: any) {
+      console.error('Erro ao obter reservas:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro ao obter reservas.',
+        dados: []
+      };
+    }
   }
 
   async obterHorariosDisponiveis(
     data: string,
     campo?: string
   ): Promise<ApiResponse<HorariosDisponiveis>> {
-    const params = new URLSearchParams({ data });
-    if (campo) params.append('campo', campo);
+    try {
+      const { data: reservas, error } = await supabase
+        .from('reservas')
+        .select('horario')
+        .eq('data', data)
+        .eq('campo', campo || 'campo1');
 
-    return this.request(`/reservas/horarios-disponiveis?${params.toString()}`);
+      if (error) throw error;
+
+      const horariosOcupados = (reservas || []).map(r => r.horario);
+
+      const todosHorarios = [];
+      for (let hora = 7; hora <= 22; hora++) {
+        todosHorarios.push(`${hora.toString().padStart(2, '0')}:00`);
+        todosHorarios.push(`${hora.toString().padStart(2, '0')}:30`);
+      }
+
+      const horariosDisponiveis = todosHorarios.filter(
+        horario => !horariosOcupados.includes(horario)
+      );
+
+      return {
+        sucesso: true,
+        dados: {
+          disponiveis: horariosDisponiveis,
+          ocupados: horariosOcupados
+        }
+      };
+    } catch (error: any) {
+      console.error('Erro ao obter horários:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro ao obter horários disponíveis.',
+        dados: {
+          disponiveis: [],
+          ocupados: []
+        }
+      };
+    }
   }
 
   async enviarContacto(dados: ContactoData): Promise<ApiResponse<any>> {
-    return this.request('/contactos', {
-      method: 'POST',
-      body: JSON.stringify(dados),
-    });
-  }
+    try {
+      const { data, error } = await supabase
+        .from('contactos')
+        .insert([
+          {
+            nome: dados.nome,
+            email: dados.email,
+            telefone: dados.telefone || null,
+            mensagem: dados.mensagem
+          }
+        ])
+        .select()
+        .single();
 
-  async verificarSaude(): Promise<{ status: string }> {
-    const response = await fetch(`${API_URL.replace('/api', '')}/api/health`);
-    return response.json();
+      if (error) throw error;
+
+      return {
+        sucesso: true,
+        mensagem: 'Mensagem enviada com sucesso! Responderemos em breve.',
+        dados: data
+      };
+    } catch (error: any) {
+      console.error('Erro ao enviar contacto:', error);
+      return {
+        sucesso: false,
+        erro: error.message || 'Erro ao enviar mensagem. Por favor, tente novamente.'
+      };
+    }
   }
 }
 
